@@ -22,9 +22,7 @@ proc token(): string =
 proc checkTodos(): Response =
   var client = newHttpClient()
   client.headers = newHttpHeaders({ "PRIVATE-TOKEN": token() })
-
   let response = client.request(url(), httpMethod = HttpGet)
-  echo response.body
   client.close
   return response
 
@@ -49,10 +47,8 @@ let res = checkTodos()
 let todos = parseJson(res.body)
 
 for i in json.items(todos):
-  echo "------------"
   let todo = to(i, Todo)
   let msg = createText(todo)
-  echo msg
   let res = sendToMattermost("nim", msg)
   if not res:
     echo "Unable to send message to mattermost - $#" % [msg]
