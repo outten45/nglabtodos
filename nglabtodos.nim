@@ -40,28 +40,22 @@ proc sendToMattermost(username: string, text: string): bool =
     var client = newHttpClient()
     let response = client.request(getEnv("MM_WEBHOOK"), httpMethod = HttpPost, body = $body)
     client.close
-    if response.status == "200":
+    if response.status != "200":
       result = true
 
-let res = checkTodos()
-let todos = parseJson(res.body)
+proc sendTodos(todos: JsonNode) =
+  for i in json.items(todos):
+    let todo = to(i, Todo)
+    let msg = createText(todo)
+    let res = sendToMattermost("nim", msg)
+    if not res:
+      echo "Unable to send message to mattermost - $#" % [msg]
 
-for i in json.items(todos):
-  let todo = to(i, Todo)
-  let msg = createText(todo)
-  let res = sendToMattermost("nim", msg)
-  if not res:
-    echo "Unable to send message to mattermost - $#" % [msg]
+proc main() =
+  let res = checkTodos()
+  let todos = parseJson(res.body)
+  sendTodos(todos)
+
+main()
 
 
-# used for debugging
-if false:
-  try:
-    let c = newHttpClient( maxRedirects = 10, userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.12; rv:59.0) Gecko/20100101 Firefox/59.0 NIM" )
-    let vvv =  c.getContent(getEnv("TEST_URL"))
-    echo vvv
-
-  except ProtocolError:
-    let e = getCurrentException()
-    echo e.msg
-    raise e
